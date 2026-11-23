@@ -1538,6 +1538,7 @@ html[data-theme="light"] .apf-types button.dis .ico{color:#9fa2a8}
 .lm-tx p{color:var(--text-secondary)}
 .lm-foot{padding:24px;display:flex}
 .lm-go{flex:1}
+.lm-foot2{flex-direction:column;gap:12px}.lm-foot2 .lm-go{flex:none;width:100%}
 .il{position:absolute;left:50%;top:40px;transform:translateX(-50%);width:320px;height:180px;background:#fff;border-radius:10px 10px 0 0;display:flex;overflow:hidden}
 .il i{display:block;flex:none}
 .il-sb{width:64px;height:100%;flex:none;background:#f4f4f5;padding:12px 10px;display:flex;flex-direction:column;gap:7px}
@@ -1556,6 +1557,7 @@ html[data-theme="light"] .apf-types button.dis .ico{color:#9fa2a8}
 .il-tg{width:18px;height:10px;border-radius:5px;background:#ced0d3;position:relative;flex:none}
 .il-tg i{position:absolute;top:1.5px;left:1.5px;width:7px;height:7px;border-radius:4px;background:#fff}
 .il-tg.on{background:#759d19}.il-tg.on i{left:9.5px}
+.il-cfg>*{flex-shrink:0}
 .tbl{overflow-x:auto}
 </style>
 <div id="viewport"><div id="app"></div></div>
@@ -4644,6 +4646,7 @@ function apfClick(t, id, e) {
   if (a === 'ut-start') return startUsability();
   if (a === 'lm-try') return lightIntroTry();
   if (a === 'lm-close') return closeModal('close');
+  if (a === 'lm-dark') return lightIntroBackToDark();
   if (a === 'open') return openApfModal();
   if (a === 'info') return openApfInfo();
   if (a === 'group') { const g = APF[+t.dataset.g]; g.open = !g.open; track('aprofundamento_group_toggled', { discipline: g.disc, open: g.open }); return refreshPage(); }
@@ -4693,7 +4696,7 @@ function ilConfig() {
   const tg = on => `<span class="il-tg${on ? ' on' : ''}"><i></i></span>`;
   const pref = (right, ic = IL.t, hl = false) => `<span class="il-row il-pr"${hl ? ' style="background:rgba(188,239,68,.3)"' : ''}>${_r(8, 8, ic, 2)}${txt(28, 70)}${right}</span>`;
   const notif = on => `<span class="il-row il-pr">${_r(8, 8, IL.t, 2)}${txt(24, 84)}${tg(on)}</span>`;
-  return `<div class="il">${ilSidebar(6)}<div class="il-ct" style="gap:7px">
+  return `<div class="il">${ilSidebar(6)}<div class="il-ct il-cfg" style="gap:7px">
     <span class="il-col" style="gap:4px">${_r(70, 7, IL.k, 3.5)}${_r(110, 3, IL.t)}</span>
     <span class="il-row" style="gap:8px;align-items:flex-end"><span class="il-col" style="gap:3px">${_r(28, 3, IL.k)}${_r(28, 1.5, IL.g, 1)}</span>${_r(26, 3, IL.t)}${_r(34, 3, IL.t)}</span>
     ${_r(40, 4, IL.k, 2)}
@@ -4707,7 +4710,10 @@ function lmHtml(step) {
     <div class="lm-hero">${s1 ? ilMeta() : ilConfig()}<button class="lm-x" data-track="light_intro.step${step}.close" data-apf="lm-close" aria-label="Fechar">${icon('x-20')}</button></div>
     <div class="lm-tx"><h2 id="lm-t">${s1 ? 'Chegou o modo claro' : 'Você está no modo claro'}</h2>
       <p>${s1 ? 'Agora você pode estudar na Guruja com um visual claro. Experimente e veja qual combina mais com você.' : 'Para voltar ao modo escuro quando quiser, acesse Configurações › Preferências › Tema.'}</p></div>
-    <div class="lm-foot"><button class="btn apf-go lm-go" data-track="light_intro.step${step}.${s1 ? 'try' : 'ok'}" data-apf="${s1 ? 'lm-try' : 'lm-close'}" data-autofocus>${s1 ? 'Testar modo claro' : 'Entendi'}</button></div></div>`;
+    <div class="lm-foot${s1 ? '' : ' lm-foot2'}">${s1
+      ? `<button class="btn apf-go lm-go" data-track="light_intro.step1.try" data-apf="lm-try" data-autofocus>Testar modo claro</button>`
+      : `<button class="btn apf-go lm-go" data-track="light_intro.step2.keep_light" data-apf="lm-close" data-autofocus>Continuar com o light mode</button>
+         <button class="btn outline lm-go" data-track="light_intro.step2.back_to_dark" data-apf="lm-dark">Voltar para o dark mode</button>`}</div></div>`;
 }
 function openLightIntro() { openModal('light_mode_intro', lmHtml(1), { props: { step: 1 } }); }
 function lightIntroTry() {
@@ -4715,6 +4721,12 @@ function lightIntroTry() {
   applyTheme(); refreshPage();
   track('theme_changed', { from: ['sistema', 'escuro', 'claro'][prev], to: 'claro', resolved: 'light', source: 'light_intro_modal' });
   const m = modalStack[modalStack.length - 1]; if (m && m.kind === 'light_mode_intro') { m.el.innerHTML = lmHtml(2); m.step = 2; track('light_intro_step', { step: 2 }); }
+}
+function lightIntroBackToDark() {
+  const prev = state.cfg.theme; state.cfg.theme = 1; try { localStorage.setItem(THEME_KEY, '1'); } catch (_) {}
+  applyTheme(); refreshPage();
+  track('theme_changed', { from: ['sistema', 'escuro', 'claro'][prev], to: 'escuro', resolved: 'dark', source: 'light_intro_modal' });
+  closeModal('back_to_dark');
 }
 function showUsabilityStart() {
   const el = document.createElement('div'); el.id = 'ut-start'; el.dataset.region = 'usability_start';
